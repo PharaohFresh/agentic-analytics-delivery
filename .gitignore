@@ -1,0 +1,25 @@
+# Secrets / credentials — never commit
+*.key
+*.pem
+*-key.json
+*_adc.json
+service-account*.json
+.env
+configs/mcp_config.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

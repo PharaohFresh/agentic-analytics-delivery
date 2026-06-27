@@ -1,0 +1,27 @@
+# Declarative verification checks. Each runs as a single-value assertion whose
+# expected result is 0. The Verification Analyst (and run_audit.py) execute these
+# independently of the agent that produced the data -- trust, but verify.
+#
+# SQL is kept to a portable subset so the same checks run against the SQLite demo
+# fixture and a real warehouse. On a real target, qualify table names as needed.
+
+checks:
+  - label: "fct_order_items grain == order_items source rows"
+    sql: >
+      select (select count(*) from fct_order_items)
+           - (select count(*) from order_items)
+
+  - label: "fct_orders grain == orders source rows"
+    sql: >
+      select (select count(*) from fct_orders)
+           - (select count(*) from orders)
+
+  - label: "no orphan order items (item without a parent order)"
+    sql: >
+      select count(*) from fct_order_items oi
+      left join fct_orders o on oi.order_id = o.order_id
+      where o.order_id is null
+
+  - label: "no null sale_price in order items"
+    sql: >
+      select count(*) from fct_order_items where sale_price is null

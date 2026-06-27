@@ -1,0 +1,54 @@
+{
+  "_comment": "Template only. Copy to configs/mcp_config.json (gitignored) and fill in real endpoints/credentials via environment variables. Servers are grouped by the CATEGORY of system they connect to; each tool is marked read-only or write so least-privilege is auditable at a glance.",
+
+  "mcpServers": {
+    "data_warehouse": {
+      "_category": "SQL data warehouse (e.g. BigQuery / Snowflake)",
+      "command": "warehouse-mcp",
+      "args": ["--project", "${WAREHOUSE_PROJECT}"],
+      "env": { "WAREHOUSE_CREDENTIALS": "${WAREHOUSE_CREDENTIALS}" },
+      "tools": {
+        "execute_query": "read-only",
+        "list_schemas_and_tables": "read-only",
+        "deploy_view_definition": "write"
+      }
+    },
+
+    "bi_platform": {
+      "_category": "BI / visualization (e.g. Tableau / Looker / Power BI)",
+      "command": "bi-mcp",
+      "args": ["--site", "${BI_SITE}"],
+      "env": { "BI_TOKEN": "${BI_TOKEN}" },
+      "tools": {
+        "list_reports": "read-only",
+        "get_report_definition": "read-only",
+        "rebind_report_datasource": "write",
+        "trigger_model_refresh": "write"
+      }
+    },
+
+    "issue_tracker": {
+      "_category": "Issue tracker (e.g. Jira / Linear / GitHub Issues)",
+      "command": "tracker-mcp",
+      "env": { "TRACKER_TOKEN": "${TRACKER_TOKEN}" },
+      "tools": {
+        "list_backlog_items": "read-only",
+        "get_task_details": "read-only",
+        "create_task": "write",
+        "append_task_comment": "write"
+      }
+    },
+
+    "object_storage": {
+      "_category": "Object storage / data lake (e.g. GCS / S3)",
+      "command": "storage-mcp",
+      "env": { "STORAGE_CREDENTIALS": "${STORAGE_CREDENTIALS}" },
+      "tools": {
+        "list_storage_contents": "read-only",
+        "read_storage_file": "read-only",
+        "write_storage_file": "write",
+        "archive_storage_file": "write"
+      }
+    }
+  }
+}

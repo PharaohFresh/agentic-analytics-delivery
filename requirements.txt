@@ -1,0 +1,2 @@
+# Verification harness only. The agents/runbooks themselves are runtime-agnostic.
+pyyaml>=6.0
