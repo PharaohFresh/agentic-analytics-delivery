@@ -1,5 +1,7 @@
 # Governed Agentic Analytics-Engineering Delivery
 
+[![verify](https://github.com/PharaohFresh/agentic-analytics-delivery/actions/workflows/verify.yml/badge.svg)](https://github.com/PharaohFresh/agentic-analytics-delivery/actions/workflows/verify.yml)
+
 A reference architecture for shipping analytics-engineering changes — data models,
 BI report updates, issue-tracker sync — with **AI agents as accountable
 accelerators behind a human approval gate**, not autonomous actors.
