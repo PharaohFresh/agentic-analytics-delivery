@@ -68,6 +68,38 @@ docs/          full sanitized architecture write-up
 GOVERNANCE.md  environment separation, no-deletion policy, rollback, promotion
 ```
 
+## What it looks like in practice
+
+The approval gate operates on a written plan, not a chat transcript. From
+[`plans/deployment_plan_example.md`](plans/deployment_plan_example.md) — the artifact a human
+actually signs off on:
+
+> **Status: APPROVED** ✅ — approved by `@data-lead` on 2026-06-20.
+>
+> **Change:** New model `mart_product_category_margin`, grain `(department, category)`,
+> materialized as a table. New tests: `not_null` on `total_revenue`; grain uniqueness on
+> the composite key.
+>
+> **Verification criteria:** grain is unique and non-null; `sum(total_revenue)` reconciles
+> to `sum(sale_price)` from `fct_order_items`; `return_rate` is within `[0, 1]` for every row.
+>
+> **Rollback:** revert the commit; the mart is additive, so no downstream asset depends on it yet.
+>
+> **Scope boundary:** sandbox (`dev`) only. No production build, no BI rebind in this task.
+
+And the independent verification pass is executable, not aspirational — actual output of the
+harness in this repo:
+
+```
+$ python scripts/run_audit.py --demo
+[OK]   fct_order_items grain == order_items source rows  (result=0)
+[OK]   fct_orders grain == orders source rows  (result=0)
+[OK]   no orphan order items (item without a parent order)  (result=0)
+[OK]   no null sale_price in order items  (result=0)
+------------------------------------------------------------
+[OK] all checks passed.
+```
+
 ## Run the verification harness
 
 The verification layer is the part worth seeing work. It runs out of the box
@@ -85,7 +117,10 @@ and warehouse-agnostic.
 
 ## Tech stack (generic)
 
-- **Agent runtime + Model Context Protocol (MCP)** for tool access
+- **Agent runtime + Model Context Protocol (MCP)** for tool access — agents reach the
+  warehouse, BI platform, and issue tracker through MCP servers wired by capability
+  (see [`configs/mcp_config.example.json`](configs/mcp_config.example.json)), so tool scope
+  and credentials live in config, never in an agent's prompt or code
 - **Python** for the verification harness
 - **dbt + a SQL warehouse** as the transformation/target layer
 - **Markdown + YAML** for agents, skills, plans, and config
