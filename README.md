@@ -48,12 +48,18 @@ phase before it.
 
 ## The agents
 
-| Agent | Phase | Responsibility | Mutates? |
-|---|---|---|---|
-| [Orchestrator](agents/orchestrator.md) | all | Owns the task, writes the plan, holds the approval gate, compiles logs | no (delegates) |
-| [Investigator](agents/investigator.md) | plan | Read-only scan of repo, schemas, docs, and references for context | no |
-| [Execution Engine](agents/execution-engine.md) | execute | Applies approved mutations to models / BI / config | yes (sandbox) |
-| [Verification Analyst](agents/verification-analyst.md) | verify | Independent audits: row reconciliation, grain, freshness | no |
+| Agent | Phase | Responsibility | Mutates? | Model tier |
+|---|---|---|---|---|
+| [Orchestrator](agents/orchestrator.md) | all | Owns the task, writes the plan, holds the approval gate, compiles logs | no (delegates) | judgment (frontier) |
+| [Investigator](agents/investigator.md) | plan | Read-only scan of repo, schemas, docs, and references for context | no | procedural (mid) |
+| [Execution Engine](agents/execution-engine.md) | execute | Applies approved mutations to models / BI / config | yes (sandbox) | procedural (mid) |
+| [Verification Analyst](agents/verification-analyst.md) | verify | Independent audits: row reconciliation, grain, freshness | no | procedural (mid) |
+
+Roles are decoupled from models, and the frontier model is deliberately a
+**thin judgment layer**: it plans, reviews, and renders verdicts while the
+mechanical majority of each task runs on cheaper tiers. The routing policy —
+tiers, escalation rules, and why a cheap model's "all clear" is never taken at
+face value — is in [`docs/model-routing.md`](docs/model-routing.md).
 
 ## What's in here
 

@@ -26,6 +26,12 @@ Four single-responsibility roles (full definitions in [`agents/`](../agents)):
 - **Verification Analyst** — independent, read-only audits whose verdict gates
   completion.
 
+Roles and models are decoupled: only the Orchestrator runs on a frontier model
+(a thin judgment layer), while the other three roles run on cheaper tiers
+adequate for bounded, procedural work — with explicit escalation rules and a
+mandatory judgment-layer review of any cheap-tier "all clear." Full policy in
+[`model-routing.md`](model-routing.md).
+
 ## 3. MCP servers / tools
 
 Tool access is via MCP servers grouped by the *category* of system they connect to
