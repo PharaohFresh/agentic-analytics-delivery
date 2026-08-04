@@ -18,3 +18,6 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run verification harness (demo fixture)
         run: python scripts/run_audit.py --demo
+
+      - name: Negative-path tests (seeded defects must fail the harness)
+        run: python -m unittest discover -s tests -v

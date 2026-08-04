@@ -121,6 +121,15 @@ single-value assertion, and exits non-zero if any fails. Point it at a real
 warehouse by implementing one `connect()` function — the checks are declarative
 and warehouse-agnostic.
 
+The failure path is tested, not assumed. [`tests/`](tests/) seeds realistic
+defects into the fixture — an orphaned item whose parent order never landed, a
+null price, an incremental fact that silently dropped a row — and asserts the
+harness exits non-zero with exactly the right check tripping. One case
+deliberately shows a single defect (a lost parent order) raising two
+independent alarms: grain reconciliation *and* referential integrity.
+CI runs both directions on every push: the clean fixture must pass, the
+seeded defects must fail.
+
 ## Tech stack (generic)
 
 - **Agent runtime + Model Context Protocol (MCP)** for tool access — agents reach the
