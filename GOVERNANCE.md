@@ -1,40 +1,29 @@
-# Governance
+# Governance and implementation scope
 
-The guardrails that make automated change *trustworthy*. The point isn't
-ceremony — it's that a data team can rely on what the system ships.
+## Current executable scope
 
-## Environments
-- **dev** and **prod** are separate targets (separate datasets/workspaces),
-  selected by configuration.
-- All automated work happens against **dev**. The execution phase never writes to
-  prod.
+The program changes only synthetic JSON files inside a local sandbox. Catalog `prod`/`dev` values describe invented metadata; they are not connected workspaces. No production, cloud or employer adapter is implemented.
 
-## Promotion (dev → prod)
-1. Build and verify in dev: every check in the runbook's *Verification Criteria*
-   must pass.
-2. Open a PR. The diff and the approved plan travel together.
-3. **Human approval gate** — a reviewer signs off. No self-merge to prod.
-4. Prod builds run only from the protected `main` branch via the approved pipeline.
+Execution requires an unchanged exact plan and a matching explicit approval file. The sample demo creates a clearly labeled synthetic approver record. This attestation binds reviewed content, but does not authenticate identity or supply production authorization.
 
-## No-deletion policy
-- Models/reports are deprecated, not dropped, on first pass. Renames go through a
-  deprecation alias for one cycle.
-- Snapshots and history are append-only and never rebuilt destructively.
-- If removal is genuinely required, assets are relocated to `archive/` for a human
-  to destroy — automation never deletes.
+## Enterprise promotion pattern
 
-## Data integrity
-- Every source has tests; every fact asserts its grain (unique + not-null key).
-- `scripts/run_audit.py` reconciles counts independently of the agent that built
-  the data — trust, but verify.
+Real development and production are separate targets. Develop and verify in a sandbox, attach the exact plan and diff to a PR, obtain human review and promote only through the authorized production pipeline. A runtime flag or a passing test is not owner permission to deploy. No self-merge to production is included in the local demonstration.
 
-## Secrets
-- Credentials live only in the environment / a gitignored config. `*.example`
-  files are the templates.
-- No keys, tokens, or account identifiers are ever committed. Agents never read
-  secret values.
+## Evidence and data integrity
 
-## Rollback
-- Because promotion is PR-based and prod is rebuildable from version-controlled
-  code, rollback = revert the commit and rerun the pipeline. A failed verification
-  pass triggers this automatically before prod is ever touched.
+Source manifests use content hashes. Historical before states, approved plans, failed candidates and final receipts are retained. Current working fixture/checkpoint files are mutable; completed evidence is not overwritten.
+
+The separate SQL harness checks row counts, key integrity/coverage, orphan items, null prices and item values/parent mappings by key. It does not prove every business calculation or an unobserved downstream outcome. Failed checks remain failures.
+
+## Rollback and partial outcomes
+
+A failed final local verification retains the failed catalog and restores the current working fixture to its before snapshot. A retry-exhausted run remains partial. Crash-window recovery requires the exact write-ahead event and expected catalog state. Historical evidence stays intact.
+
+Cloud effects may need provider-specific compensation and may not be reversible atomically. Do not describe a local restore or a commit revert as proof that external production state was restored.
+
+## Credentials and disclosure
+
+No credentials, private identifiers or employer data belong in repository files. A future adapter consumes credentials through its environment or managed tooling without logging secret values. Public fixtures, plans and receipts must remain synthetic.
+
+Hash chaining detects changes against a retained known receipt. It does not secure editable local files against an attacker who can rewrite both journal and receipt. A real service needs independently protected approval and evidence stores.

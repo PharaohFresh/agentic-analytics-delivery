@@ -4,7 +4,7 @@ role: Execution engine
 phases: [execute]
 mutates: true
 target: sandbox only
-tier: procedural
+tier: task-selected
 ---
 
 # Execution Engine
@@ -31,7 +31,8 @@ the development sandbox, only after the gate has cleared.
 - Touches no asset outside the plan's stated scope.
 
 ## Model routing
-**Procedural tier** — the judgment already happened at the approval gate;
-applying the plan is deliberately mechanical, which is exactly what makes it
-cheap to run. Deviations from the plan are reported up, never resolved locally.
+Use a capable executor for the actual implementation and failure modes. An
+approved scope does not eliminate technical judgment. Routine choices within
+that scope can be resolved locally; material deviations, missing authority and
+changed risk return to the lead. Model cost savings require measurement.
 See [`docs/model-routing.md`](../docs/model-routing.md).

@@ -2,8 +2,8 @@
 # expected result is 0. The Verification Analyst (and run_audit.py) execute these
 # independently of the agent that produced the data -- trust, but verify.
 #
-# SQL is kept to a portable subset so the same checks run against the SQLite demo
-# fixture and a real warehouse. On a real target, qualify table names as needed.
+# These checks execute on the SQLite demo. A warehouse adapter must translate
+# dialect-specific null-safe comparisons and qualify its source/target tables.
 
 checks:
   - label: "fct_order_items grain == order_items source rows"
@@ -25,3 +25,38 @@ checks:
   - label: "no null sale_price in order items"
     sql: >
       select count(*) from fct_order_items where sale_price is null
+
+  - label: "no duplicate order-item keys"
+    sql: >
+      select count(*) from
+      (select id from fct_order_items group by id having count(*) > 1)
+
+  - label: "no null order-item keys"
+    sql: >
+      select count(*) from fct_order_items where id is null
+
+  - label: "order-item key coverage matches source"
+    sql: >
+      select
+      (select count(*) from order_items s left join fct_order_items t on s.id = t.id where t.id is null)
+      + (select count(*) from fct_order_items t left join order_items s on t.id = s.id where s.id is null)
+
+  - label: "order-item values and parent mappings match source"
+    sql: >
+      select count(*) from fct_order_items t join order_items s on t.id = s.id
+      where t.order_id is not s.order_id or t.sale_price is not s.sale_price
+
+  - label: "no duplicate order keys"
+    sql: >
+      select count(*) from
+      (select order_id from fct_orders group by order_id having count(*) > 1)
+
+  - label: "no null order keys"
+    sql: >
+      select count(*) from fct_orders where order_id is null
+
+  - label: "order key coverage matches source"
+    sql: >
+      select
+      (select count(*) from orders s left join fct_orders t on s.order_id = t.order_id where t.order_id is null)
+      + (select count(*) from fct_orders t left join orders s on t.order_id = s.order_id where s.order_id is null)

@@ -3,7 +3,7 @@ name: investigator
 role: Codebase / context investigator
 phases: [plan]
 mutates: false
-tier: procedural
+tier: task-selected
 ---
 
 # Investigator
@@ -28,8 +28,8 @@ Read-only. Builds the context the Orchestrator needs to write a correct plan.
   gate and never mutates anything, including in "obvious" cases.
 
 ## Model routing
-**Procedural tier** — context gathering is a bounded sweep with a defined
-deliverable; single-purpose lookups route further down to the retrieval tier.
-Ambiguity or contradictions between sources escalate to the Orchestrator, and a
-"nothing relevant found" report is reviewed there, never taken as terminal.
+Choose capability to match investigation difficulty, source ambiguity and the
+cost of a missed constraint. A bounded lookup and a cross-system diagnosis may
+need different approaches. Escalate contradictory evidence or missing authority;
+the lead reads the decisive source text rather than relying only on a summary.
 See [`docs/model-routing.md`](../docs/model-routing.md).

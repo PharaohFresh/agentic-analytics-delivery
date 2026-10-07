@@ -1,0 +1,167 @@
+{
+  "checkpoint_recovery": {
+    "after_sha256": "c19453797a9a8a249f1d415b45df602093462a7002aee59685d585de143819ad",
+    "attempts_this_execution": {},
+    "before_sha256": "4eea0790ef609b5a0d1325e8eb1aba735656f944f35bc0c498150aa29e2e9b14",
+    "cloud_mutations": 0,
+    "completed_operations": 1,
+    "data_origin": "synthetic",
+    "final_audit": {
+      "affected_reports": [],
+      "asset_count": 8,
+      "declared_operational_sources": {
+        "prod.revenue_report": [
+          "CRM",
+          "ERP"
+        ]
+      },
+      "edges": {
+        "dev.raw_orders": [],
+        "prod.daily_revenue": [
+          "prod.order_fact"
+        ],
+        "prod.item_catalog": [],
+        "prod.order_fact": [
+          "prod.order_ingestion"
+        ],
+        "prod.order_ingestion": [
+          "prod.raw_orders"
+        ],
+        "prod.product_labels": [
+          "prod.item_catalog"
+        ],
+        "prod.raw_orders": [],
+        "prod.revenue_report": [
+          "prod.daily_revenue",
+          "prod.product_labels"
+        ]
+      },
+      "evidence": "parsed SQL and declared synthetic metadata; no live-system verification",
+      "healthy": true,
+      "issues": []
+    },
+    "identity_authentication": "not implemented; local approval attestation",
+    "journal_tip": {
+      "event_count": 4,
+      "sha256": "ff6a48da388d23f3fc664cee0accc4e3cba58424bdbdc0c2707c277adaa72e0d"
+    },
+    "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
+    "status": "verified",
+    "target": "local synthetic files only"
+  },
+  "crash_window": {
+    "completed_operations": 0,
+    "journal_tip": {
+      "event_count": 2,
+      "sha256": "4be2989b995d8b323991220904384e7e80d5555f14266fc0043b67bda024cdd4"
+    },
+    "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
+    "status": "interrupted"
+  },
+  "data_origin": "synthetic",
+  "failed_verification": {
+    "failed_candidate_sha256": "022964f5b5b8e7d18f99c770a8d969de1ca83d1991d2e7a561344faf8470acd3",
+    "journal_tip": {
+      "event_count": 5,
+      "sha256": "7d8e1b9f44cf36c96f9cd17e0110468adc89b4ba2b6a1a80a97e38ea401e3c98"
+    },
+    "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
+    "restored_sha256": "4eea0790ef609b5a0d1325e8eb1aba735656f944f35bc0c498150aa29e2e9b14",
+    "status": "rolled_back"
+  },
+  "initial_audit": {
+    "affected_reports": [
+      "prod.revenue_report"
+    ],
+    "asset_count": 8,
+    "declared_operational_sources": {
+      "prod.revenue_report": [
+        "CRM",
+        "ERP"
+      ]
+    },
+    "edges": {
+      "dev.raw_orders": [],
+      "prod.daily_revenue": [
+        "prod.order_fact"
+      ],
+      "prod.item_catalog": [],
+      "prod.order_fact": [
+        "prod.order_ingestion"
+      ],
+      "prod.order_ingestion": [
+        "dev.raw_orders"
+      ],
+      "prod.product_labels": [
+        "prod.item_catalog"
+      ],
+      "prod.raw_orders": [],
+      "prod.revenue_report": [
+        "prod.daily_revenue",
+        "prod.product_labels"
+      ]
+    },
+    "evidence": "parsed SQL and declared synthetic metadata; no live-system verification",
+    "healthy": false,
+    "issues": [
+      {
+        "asset": "prod.order_ingestion",
+        "reference": "dev.raw_orders",
+        "type": "environment_leak"
+      }
+    ]
+  },
+  "retry_and_verify": {
+    "after_sha256": "c19453797a9a8a249f1d415b45df602093462a7002aee59685d585de143819ad",
+    "attempts_this_execution": {
+      "e0f7a90f646db3c0718b83b6c147e0fffb4725d430dbd09b94e3de287e18706c": 3
+    },
+    "before_sha256": "4eea0790ef609b5a0d1325e8eb1aba735656f944f35bc0c498150aa29e2e9b14",
+    "cloud_mutations": 0,
+    "completed_operations": 1,
+    "data_origin": "synthetic",
+    "final_audit": {
+      "affected_reports": [],
+      "asset_count": 8,
+      "declared_operational_sources": {
+        "prod.revenue_report": [
+          "CRM",
+          "ERP"
+        ]
+      },
+      "edges": {
+        "dev.raw_orders": [],
+        "prod.daily_revenue": [
+          "prod.order_fact"
+        ],
+        "prod.item_catalog": [],
+        "prod.order_fact": [
+          "prod.order_ingestion"
+        ],
+        "prod.order_ingestion": [
+          "prod.raw_orders"
+        ],
+        "prod.product_labels": [
+          "prod.item_catalog"
+        ],
+        "prod.raw_orders": [],
+        "prod.revenue_report": [
+          "prod.daily_revenue",
+          "prod.product_labels"
+        ]
+      },
+      "evidence": "parsed SQL and declared synthetic metadata; no live-system verification",
+      "healthy": true,
+      "issues": []
+    },
+    "identity_authentication": "not implemented; local approval attestation",
+    "journal_tip": {
+      "event_count": 8,
+      "sha256": "61597ce94f08591f3eab36b03e2617f7f587b84828d70b72d802c2c1e1dea9ce"
+    },
+    "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
+    "status": "verified",
+    "target": "local synthetic files only"
+  },
+  "unapproved_execution_blocked": true
+}

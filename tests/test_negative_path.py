@@ -22,6 +22,9 @@ GRAIN_ITEMS = "fct_order_items grain == order_items source rows"
 GRAIN_ORDERS = "fct_orders grain == orders source rows"
 ORPHANS = "no orphan order items (item without a parent order)"
 NULL_PRICE = "no null sale_price in order items"
+ITEM_KEYS = "order-item key coverage matches source"
+ITEM_VALUES = "order-item values and parent mappings match source"
+ORDER_KEYS = "order key coverage matches source"
 
 
 def audit(conn):
@@ -59,7 +62,7 @@ class NegativePathTests(unittest.TestCase):
         conn.execute("update fct_order_items set sale_price = null where id = 3")
         code, failed = audit(conn)
         self.assertEqual(code, 1)
-        self.assertEqual(failed, [NULL_PRICE])
+        self.assertEqual(failed, sorted([NULL_PRICE, ITEM_VALUES]))
 
     def test_dropped_fact_rows_are_caught(self):
         # An incremental fact that silently lost a row: source-vs-fact
@@ -68,9 +71,9 @@ class NegativePathTests(unittest.TestCase):
         conn.execute("delete from fct_order_items where id = 5")
         code, failed = audit(conn)
         self.assertEqual(code, 1)
-        self.assertEqual(failed, [GRAIN_ITEMS])
+        self.assertEqual(failed, sorted([GRAIN_ITEMS, ITEM_KEYS]))
 
-    def test_dropped_parent_order_trips_two_checks(self):
+    def test_dropped_parent_order_trips_count_key_and_relationship_checks(self):
         # Losing a parent order surfaces twice, independently: the order-grain
         # reconciliation breaks AND its items become orphans. Overlapping
         # checks are the point -- one defect, two alarms.
@@ -78,7 +81,56 @@ class NegativePathTests(unittest.TestCase):
         conn.execute("delete from fct_orders where order_id = 3")
         code, failed = audit(conn)
         self.assertEqual(code, 1)
-        self.assertEqual(failed, sorted([GRAIN_ORDERS, ORPHANS]))
+        self.assertEqual(failed, sorted([GRAIN_ORDERS, ORDER_KEYS, ORPHANS]))
+
+    def test_same_count_duplicate_key_is_caught(self):
+        conn = demo_connection()
+        conn.execute("update fct_order_items set id=2 where id=1")
+        code, failed = audit(conn)
+        self.assertEqual(code, 1)
+        self.assertIn("no duplicate order-item keys", failed)
+        self.assertNotIn(GRAIN_ITEMS, failed)
+
+    def test_same_count_wrong_price_is_caught(self):
+        conn = demo_connection()
+        conn.execute("update fct_order_items set sale_price=sale_price+100 where id=1")
+        code, failed = audit(conn)
+        self.assertEqual(code, 1)
+        self.assertEqual(failed, [ITEM_VALUES])
+
+    def test_offsetting_price_errors_cannot_hide_behind_equal_totals(self):
+        conn = demo_connection()
+        conn.execute("update fct_order_items set sale_price=sale_price+5 where id=1")
+        conn.execute("update fct_order_items set sale_price=sale_price-5 where id=2")
+        totals = conn.execute("select (select sum(sale_price) from order_items) - (select sum(sale_price) from fct_order_items)").fetchone()[0]
+        self.assertEqual(totals, 0)
+        self.assertEqual(audit(conn), (1, [ITEM_VALUES]))
+
+    def test_wrong_but_existing_parent_is_caught(self):
+        conn = demo_connection()
+        conn.execute("update fct_order_items set order_id=3 where id=1")
+        self.assertEqual(audit(conn), (1, [ITEM_VALUES]))
+
+    def test_null_item_key_is_caught(self):
+        conn = demo_connection()
+        conn.execute("update fct_order_items set id=null where id=1")
+        code, failed = audit(conn)
+        self.assertEqual(code, 1)
+        self.assertIn("no null order-item keys", failed)
+
+    def test_same_count_duplicate_order_key_is_caught(self):
+        conn = demo_connection()
+        conn.execute("update fct_orders set order_id=2 where order_id=1")
+        code, failed = audit(conn)
+        self.assertEqual(code, 1)
+        self.assertIn("no duplicate order keys", failed)
+
+    def test_null_order_key_is_caught(self):
+        conn = demo_connection()
+        conn.execute("update fct_orders set order_id=null where order_id=1")
+        code, failed = audit(conn)
+        self.assertEqual(code, 1)
+        self.assertIn("no null order keys", failed)
 
 
 if __name__ == "__main__":

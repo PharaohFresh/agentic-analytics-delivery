@@ -1,0 +1,52 @@
+{
+  "after_sha256": "c19453797a9a8a249f1d415b45df602093462a7002aee59685d585de143819ad",
+  "attempts_this_execution": {
+    "e0f7a90f646db3c0718b83b6c147e0fffb4725d430dbd09b94e3de287e18706c": 3
+  },
+  "before_sha256": "4eea0790ef609b5a0d1325e8eb1aba735656f944f35bc0c498150aa29e2e9b14",
+  "cloud_mutations": 0,
+  "completed_operations": 1,
+  "data_origin": "synthetic",
+  "final_audit": {
+    "affected_reports": [],
+    "asset_count": 8,
+    "declared_operational_sources": {
+      "prod.revenue_report": [
+        "CRM",
+        "ERP"
+      ]
+    },
+    "edges": {
+      "dev.raw_orders": [],
+      "prod.daily_revenue": [
+        "prod.order_fact"
+      ],
+      "prod.item_catalog": [],
+      "prod.order_fact": [
+        "prod.order_ingestion"
+      ],
+      "prod.order_ingestion": [
+        "prod.raw_orders"
+      ],
+      "prod.product_labels": [
+        "prod.item_catalog"
+      ],
+      "prod.raw_orders": [],
+      "prod.revenue_report": [
+        "prod.daily_revenue",
+        "prod.product_labels"
+      ]
+    },
+    "evidence": "parsed SQL and declared synthetic metadata; no live-system verification",
+    "healthy": true,
+    "issues": []
+  },
+  "identity_authentication": "not implemented; local approval attestation",
+  "journal_tip": {
+    "event_count": 8,
+    "sha256": "61597ce94f08591f3eab36b03e2617f7f587b84828d70b72d802c2c1e1dea9ce"
+  },
+  "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
+  "status": "verified",
+  "target": "local synthetic files only"
+}
