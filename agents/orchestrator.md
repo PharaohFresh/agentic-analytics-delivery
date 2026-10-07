@@ -3,7 +3,7 @@ name: orchestrator
 role: Planner / lead agent
 phases: [plan, execute, verify, log]
 mutates: false
-tier: judgment
+tier: task-selected
 ---
 
 # Orchestrator
@@ -33,7 +33,8 @@ the final log.
   "verification is binding" rule are non-negotiable for this role.
 
 ## Model routing
-**Judgment tier** — the only role that needs the frontier model, and it stays
-thin: it does not bulk-read what a subagent can summarize, and it reviews every
-subagent conclusion (especially an "all clear") before anything irreversible or
-human-facing. See [`docs/model-routing.md`](../docs/model-routing.md).
+Choose a capable model for the task's complexity and consequences. The lead owns
+synthesis and final verification, reads decisive source evidence directly and
+reviews delegated conclusions before external delivery. Role boundaries do not
+reserve reasoning capability for the lead or require a fixed worker tier.
+See [`docs/model-routing.md`](../docs/model-routing.md).

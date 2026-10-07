@@ -6,9 +6,9 @@ assertion (expected result: 0). Exit code 0 = all pass, 1 = any fail.
     python scripts/run_audit.py --demo     # in-memory SQLite fixture, no creds
     python scripts/run_audit.py            # real warehouse (implement connect())
 
-The checks are warehouse-agnostic. To point this at a real target, implement
-connect() to return a DB-API 2.0 connection; credentials come from the
-environment, never from this file.
+The implemented checks target SQLite. To point this at a real warehouse,
+adapt the SQL dialect and implement connect() for a read-only DB-API 2.0
+connection; credentials come from the environment, never from this file.
 """
 import argparse
 import sqlite3

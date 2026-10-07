@@ -1,135 +1,137 @@
-# Governed Agentic Analytics-Engineering Delivery
+# Governed Agentic Analytics Delivery
 
-[![verify](https://github.com/PharaohFresh/agentic-analytics-delivery/actions/workflows/verify.yml/badge.svg)](https://github.com/PharaohFresh/agentic-analytics-delivery/actions/workflows/verify.yml)
+A working reference for delivering analytics changes with an explicit approval boundary and independently checkable evidence. The runnable examples trace SQL/report dependencies, find a cross-environment reference, execute an exact approved repair in a local sandbox and verify recovery and final state.
 
-A reference architecture for shipping analytics-engineering changes — data models,
-BI report updates, issue-tracker sync — with **AI agents as accountable
-accelerators behind a human approval gate**, not autonomous actors.
+**Author:** [Amir Ebrahim](https://www.linkedin.com/in/amirebrahim/) | Senior Analytics Engineer
 
-This repo is the *pattern*, fully genericized: a multi-agent system that **plans →
-waits for human approval → executes → verifies → logs**. It is the operating model
-I run for real delivery work, stripped of anything proprietary and rebuilt against
-generic placeholders so the design can stand on its own.
+The difficult part of agent-assisted delivery is establishing what changed, why it was allowed and whether it worked. Role descriptions alone cannot prove that. This repository pairs the operating model with executable negative-path tests, content-bound plans, checkpoint recovery and a retained verification receipt.
 
-> Companion repo: a working dbt + BigQuery warehouse that this delivery model
-> operates on lives at
-> [`analytics-engineering-portfolio`](https://github.com/PharaohFresh/analytics-engineering-portfolio).
+All platform definitions and datasets are synthetic. `prod` and `dev` in the catalog are labels on invented metadata; execution changes local sandbox files. No employer code, infrastructure IDs, credentials, live systems or private records are included.
 
-## Why this exists
+## Start here
 
-Most "AI + data" demos hand an agent write access and hope. The hard part isn't
-getting an LLM to write SQL — it's making automated changes that a data team can
-*trust*. That means: a plan a human signs off on before anything mutates,
-execution scoped to a sandbox, an independent verification pass that can fail the
-run, and an append-only log of what actually happened. This repo encodes those
-guardrails as structure.
+| Reader | Useful starting point |
+|---|---|
+| Recruiter or hiring manager | [Generated delivery proof](examples/delivery-demo.json) and the capability table below |
+| Analytics engineer | [Eleven SQL checks](scripts/checks.yml), [failure cases](tests/test_negative_path.py), and [SQL lineage](delivery/catalog.py) |
+| Data/platform engineer | [Approval and checkpoint implementation](delivery/workflow.py), [integrity checks](delivery/integrity.py), and [delivery tests](tests/test_delivery.py) |
 
-## The flow
+## What works here
+
+| Capability | Demonstration |
+|---|---|
+| Data correctness | Row counts, key uniqueness/nulls/coverage, referential integrity, values and parent mappings by stable key |
+| Dependency analysis | BigQuery-style static SQL with CTEs, aliases, nested queries and comments; transitive impact on report consumers |
+| Environment isolation | An invented production-labeled pipeline references a development-labeled source; the audit identifies the affected report |
+| Approval binding | An unapproved or changed plan cannot execute; approval covers the exact catalog and dependency changes |
+| Bounded execution | Two injected transient failures retry successfully on the third attempt; exhaustion remains partial |
+| Crash recovery | A written change interrupted before checkpointing is recognized through its exact write-ahead record and expected state |
+| Failed verification | An unapproved extra change fails readback, preserves the failed candidate and restores the working fixture |
+| Evidence integrity | Source SHA-256 manifests and a hash-chained journal detect changes against a retained receipt |
 
 ```mermaid
-graph TD
-    A[Task intake] --> B[Phase 1 · Plan  — autonomous]
-    B --> C[Write plan to plans/*.md]
-    C --> D{Human approval gate}
-    D -- Rejected --> B
-    D -- Approved --> E[Phase 2 · Execute — autonomous, sandbox only]
-    E --> F[Apply model / BI / config changes]
-    F --> G[Phase 3 · Verify — autonomous]
-    G --> H{All checks pass?}
-    H -- No --> I[Halt + rollback]
-    H -- Yes --> J[Phase 4 · Log + sync — autonomous]
-    J --> K[Update CHANGELOG + sync issue tracker]
+flowchart LR
+    A[Task and source catalog] --> B[Parse dependencies and audit]
+    B --> C[Exact proposed repair]
+    C --> D{Explicit approval for this plan?}
+    D -- No --> E[Block before writes]
+    D -- Yes --> F[Local sandbox execution]
+    F --> G[Retry and checkpoint]
+    G --> H[Independent readback]
+    H -- Fail --> I[Retain candidate and restore fixture]
+    H -- Pass --> J[Seal verification receipt and journal tip]
 ```
 
-**The only human touch point is the approval gate** (and rejection loops back to
-re-plan). Everything else — exploration, planning, execution against the sandbox,
-verification, logging — runs autonomously, because each phase is bounded by the
-phase before it.
+## Run it
 
-## The agents
+Python 3.12 or newer is sufficient. No cloud account or model API key is needed.
 
-| Agent | Phase | Responsibility | Mutates? | Model tier |
-|---|---|---|---|---|
-| [Orchestrator](agents/orchestrator.md) | all | Owns the task, writes the plan, holds the approval gate, compiles logs | no (delegates) | judgment (frontier) |
-| [Investigator](agents/investigator.md) | plan | Read-only scan of repo, schemas, docs, and references for context | no | procedural (mid) |
-| [Execution Engine](agents/execution-engine.md) | execute | Applies approved mutations to models / BI / config | yes (sandbox) | procedural (mid) |
-| [Verification Analyst](agents/verification-analyst.md) | verify | Independent audits: row reconciliation, grain, freshness | no | procedural (mid) |
-
-Roles are decoupled from models, and the frontier model is deliberately a
-**thin judgment layer**: it plans, reviews, and renders verdicts while the
-mechanical majority of each task runs on cheaper tiers. The routing policy —
-tiers, escalation rules, and why a cheap model's "all clear" is never taken at
-face value — is in [`docs/model-routing.md`](docs/model-routing.md).
-
-## What's in here
-
-```
-agents/        role definitions + the universal guardrails (AGENTS.md)
-configs/       MCP server wiring by capability (template, no secrets)
-skills/        declarative runbooks the agents execute (+ the format spec)
-plans/         example human-in-the-loop approval artifact
-scripts/       generic verification harness (runs against a SQLite demo fixture)
-models/        illustrative dbt-style models the pattern operates on
-docs/          full sanitized architecture write-up
-GOVERNANCE.md  environment separation, no-deletion policy, rollback, promotion
-```
-
-## What it looks like in practice
-
-The approval gate operates on a written plan, not a chat transcript. From
-[`plans/deployment_plan_example.md`](plans/deployment_plan_example.md) — the artifact a human
-actually signs off on:
-
-> **Status: APPROVED** ✅ — approved by `@data-lead` on 2026-06-20.
->
-> **Change:** New model `mart_product_category_margin`, grain `(department, category)`,
-> materialized as a table. New tests: `not_null` on `total_revenue`; grain uniqueness on
-> the composite key.
->
-> **Verification criteria:** grain is unique and non-null; `sum(total_revenue)` reconciles
-> to `sum(sale_price)` from `fct_order_items`; `return_rate` is within `[0, 1]` for every row.
->
-> **Rollback:** revert the commit; the mart is additive, so no downstream asset depends on it yet.
->
-> **Scope boundary:** sandbox (`dev`) only. No production build, no BI rebind in this task.
-
-And the independent verification pass is executable, not aspirational — actual output of the
-harness in this repo:
-
-```
-$ python scripts/run_audit.py --demo
-[OK]   fct_order_items grain == order_items source rows  (result=0)
-[OK]   fct_orders grain == orders source rows  (result=0)
-[OK]   no orphan order items (item without a parent order)  (result=0)
-[OK]   no null sale_price in order items  (result=0)
-------------------------------------------------------------
-[OK] all checks passed.
-```
-
-## Run the verification harness
-
-The verification layer is the part worth seeing work. It runs out of the box
-against a tiny SQLite fixture — no warehouse, no credentials:
-
-```bash
-pip install -r requirements.txt
+```text
+python -m pip install -r requirements-dev.txt
 python scripts/run_audit.py --demo
+python -m delivery demo --output artifacts/demo
+python -m pytest -q
 ```
 
-It loads checks from [`scripts/checks.yml`](scripts/checks.yml), runs each as a
-single-value assertion, and exits non-zero if any fails. Point it at a real
-warehouse by implementing one `connect()` function — the checks are declarative
-and warehouse-agnostic.
+Run from the repository root in PowerShell, Bash or a terminal on macOS/Linux. Use a virtual environment. The demonstration output directory must be new so prior evidence is retained.
 
-## Tech stack (generic)
+The SQL harness passes eleven checks on its clean fixture. The delivery demo first proves that missing approval causes zero sandbox writes. It then shows one environment leak and one affected report, a successful retry, a crash-window recovery and a failed verification that restores the working fixture.
 
-- **Agent runtime + Model Context Protocol (MCP)** for tool access — agents reach the
-  warehouse, BI platform, and issue tracker through MCP servers wired by capability
-  (see [`configs/mcp_config.example.json`](configs/mcp_config.example.json)), so tool scope
-  and credentials live in config, never in an agent's prompt or code
-- **Python** for the verification harness
-- **dbt + a SQL warehouse** as the transformation/target layer
-- **Markdown + YAML** for agents, skills, plans, and config
+### Inspect the proof
 
----
-*Built by Amir Ebrahim — senior analytics engineer. [linkedin.com/in/amirebrahim](https://linkedin.com/in/amirebrahim)*
+- `artifacts/demo/plan.json`: exact proposed dependency repair and complete before catalog.
+- `successful/catalog.json`: corrected working definitions.
+- `successful/verified-receipt.json`: final catalog hash, independent audit and journal tip.
+- `successful/journal.jsonl`: approval check, attempts, applied operation and readback events.
+- `resumed/`: recovery after a write occurred before its checkpoint.
+- `rollback/`: retained failed candidate, restored fixture and failure journal.
+- `source-manifest.json`: exact source-file bytes rather than a file-size-only check.
+
+[The committed example report](examples/delivery-demo.json) was produced by these commands. It identifies simulated approvals and synthetic inputs explicitly.
+
+## Plan, review and execute separately
+
+```text
+python -m delivery audit delivery/fixtures/catalog.json
+python -m delivery plan delivery/fixtures/catalog.json --output artifacts/review/plan.json
+python -m delivery approve artifacts/review/plan.json --actor demo-reviewer --output artifacts/review/approval.json
+python -m delivery execute artifacts/review/plan.json --approval artifacts/review/approval.json --output artifacts/manual-sandbox
+python -m delivery verify artifacts/manual-sandbox
+```
+
+The first audit exits `1` because the fixture intentionally contains an environment leak. Read the proposed change before approving it. The approval file is an explicit local attestation, not an authenticated production authorization service. The fully scripted demo labels its approver `synthetic-demo-reviewer`.
+
+Exit code `0` means the requested operation completed. Code `1` means an unhealthy audit, blocked/partial execution or failed verification. Argument errors use code `2`.
+
+## The data-quality harness
+
+The original four-check harness caught row loss, orphan items and null prices. It could miss same-count duplicates, changed prices and an incorrect parent that happened to exist. It now checks:
+
+1. Source/fact row counts at each grain.
+2. Item and order key uniqueness, nulls and bidirectional coverage.
+3. Orphan order items.
+4. Null prices.
+5. Item prices and parent IDs against source records by stable key.
+
+The failure suite includes offsetting price errors whose aggregate total remains correct. This is why value-level reconciliation is separate from row-count and total-value checks. [Twelve harness tests](tests/test_negative_path.py) run clean and corrupted fixtures.
+
+The SQL currently targets SQLite; a warehouse adapter must translate dialect-specific null-safe comparisons and bind the actual source/target tables. `connect()` remains an explicit extension point, not a claimed implemented cloud connector.
+
+## Lineage and impact analysis
+
+[The catalog](delivery/fixtures/catalog.json) describes sources, a pipeline, a fact table, views and a report. View dependencies are parsed with SQLGlot scope analysis, so a CTE name, table alias, comment or string literal is not mistaken for an external source. Declared platform dependencies complete the graph between layers.
+
+Missing assets, unparsed SQL and cycles remain explicit issues and block automatic repair planning. Environment repair uses a unique logical counterpart with the same kind in the target environment. Ambiguity fails. SQL reference changes require their own reviewed SQL proposal; the code does not replace substrings heuristically.
+
+Operational source categories come from declared fixture metadata. The output does not claim to discover an unknown organization's real source systems or prove live permissions, refresh completion or rendered dashboard correctness.
+
+## Agents and the executable boundary
+
+The [role definitions](agents/) and [runbooks](skills/) describe how an investigator, orchestrator, execution role and verifier divide responsibility. They can be used by different capable agent runtimes. The executable implementation here is deterministic Python and SQL; it does not invoke LLMs, spawn autonomous agents or contact MCP/cloud servers.
+
+An agent or person can produce a proposal, but execution still needs the exact approved artifact and verification can fail it. Models are selected for the task; [routing guidance](docs/model-routing.md) does not prescribe a fixed inexpensive worker tier or claim unmeasured cost savings.
+
+## Integrity and recovery limits
+
+The local workflow has a single writer. Atomic working-file replacement, write-ahead events and reconstructed checkpoint state support recovery in the tested crash window. Failed candidates and before-state evidence are retained; only the current synthetic working fixture is restored.
+
+Journal hashes detect edits, reordering, truncation or extra events **against the independently retained receipt tip**. They do not authenticate an approver or prevent an attacker who can rewrite both journal and receipt from forging local history. A production service needs trusted identity, an external immutable approval/receipt store, concurrency control, provider-specific idempotency/readback and explicit promotion authority.
+
+[Architecture and contracts](docs/architecture.md) explain supported operations and unresolved cases. [Governance](GOVERNANCE.md) distinguishes the implemented local demonstration from the enterprise promotion pattern. [The older deployment plan](plans/deployment_plan_example.md) is illustrative; the CLI produces current content-bound plans and approvals.
+
+## Repository map
+
+```text
+delivery/        static SQL lineage, environment audit, plan/execute/verify and journal
+  fixtures/      invented platform definitions
+scripts/         independent SQLite data-quality harness and declarative checks
+tests/           negative data cases, parser behavior, approval, recovery and integrity
+examples/        command-generated demonstration evidence
+agents/          conceptual role interfaces for agent-assisted work
+skills/          sanitized runbooks
+plans/           implementation and illustrative approval artifacts
+models/          illustrative dbt-style models, not a separate warehouse
+docs/            architecture and model-routing choices
+```
+
+Related work: [dbt and BigQuery warehouse](https://github.com/PharaohFresh/analytics-engineering-portfolio) | [query optimizer](https://github.com/PharaohFresh/governed-query-optimizer) | [booking revenue reconciliation](https://github.com/PharaohFresh/revenue-reconciliation-pipeline). [MIT license](LICENSE).

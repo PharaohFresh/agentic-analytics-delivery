@@ -3,7 +3,7 @@ name: verification-analyst
 role: Verification analyst
 phases: [verify]
 mutates: false
-tier: procedural
+tier: task-selected
 ---
 
 # Verification Analyst
@@ -32,8 +32,8 @@ gates whether the run is allowed to complete.
 - A check that cannot be run is reported as *not run*, never as a pass.
 
 ## Model routing
-**Procedural tier** — the checks are declarative and the harness is
-deterministic code, so *running* verification is mechanical; the machine
-decides whether counts reconcile. Interpreting a failure (and any "all clear")
-is judgment work and is reviewed by the Orchestrator before the run completes.
+Deterministic checks establish counts, hashes and contract results. Choose a
+capable independent reviewer for interpreting failures, coverage gaps and
+business meaning. A second model does not replace executable verification; a
+passing script does not establish an unobserved external outcome.
 See [`docs/model-routing.md`](../docs/model-routing.md).

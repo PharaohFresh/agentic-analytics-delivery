@@ -23,3 +23,5 @@ logs/
 Thumbs.db
 .idea/
 .vscode/
+artifacts/
+.pytest_cache/

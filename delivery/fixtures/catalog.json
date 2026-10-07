@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "assets": [
+    {"id":"dev.raw_orders","kind":"source","environment":"dev","logical_name":"raw_orders","operational_source":"ERP","dependencies":[]},
+    {"id":"prod.raw_orders","kind":"source","environment":"prod","logical_name":"raw_orders","operational_source":"ERP","dependencies":[]},
+    {"id":"prod.item_catalog","kind":"source","environment":"prod","logical_name":"item_catalog","operational_source":"CRM","dependencies":[]},
+    {"id":"prod.order_ingestion","kind":"pipeline","environment":"prod","logical_name":"order_ingestion","dependencies":["dev.raw_orders"]},
+    {"id":"prod.order_fact","kind":"table","environment":"prod","logical_name":"order_fact","dependencies":["prod.order_ingestion"]},
+    {"id":"prod.daily_revenue","kind":"view","environment":"prod","logical_name":"daily_revenue","dependencies":[],"sql":"WITH line_totals AS (SELECT order_id, SUM(amount_cents) AS revenue_cents FROM prod.order_fact GROUP BY order_id) SELECT order_id, revenue_cents FROM line_totals"},
+    {"id":"prod.product_labels","kind":"view","environment":"prod","logical_name":"product_labels","dependencies":[],"sql":"SELECT product_id, category FROM prod.item_catalog -- FROM dev.not_a_real_dependency"},
+    {"id":"prod.revenue_report","kind":"report","environment":"prod","logical_name":"revenue_report","dependencies":["prod.daily_revenue","prod.product_labels"]}
+  ]
+}

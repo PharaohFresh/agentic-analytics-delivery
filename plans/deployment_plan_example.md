@@ -1,5 +1,9 @@
 # Deployment Plan — Add `mart_product_category_margin`
 
+This is an illustrative historical-format example. The approver label and approval
+date below are fictional demonstration text. Use `python -m delivery plan` and
+the explicit approve/execute commands for a current content-bound local demo.
+
 > **Status: APPROVED** ✅ — approved by `@data-lead` on 2026-06-20.
 > This is the artifact the human approval gate operates on. Nothing in the
 > Execution phase runs until this reads APPROVED.
