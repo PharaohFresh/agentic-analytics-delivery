@@ -16,25 +16,41 @@ FIXTURE = Path(__file__).parent / "fixtures/catalog.json"
 def main(argv=None):
     parser=argparse.ArgumentParser(description="Audit lineage and execute an exact approved change against a synthetic local catalog.")
     sub=parser.add_subparsers(dest="command",required=True)
-    d=sub.add_parser("demo");d.add_argument("--output",type=Path)
-    a=sub.add_parser("audit");a.add_argument("catalog",type=Path)
-    p=sub.add_parser("plan");p.add_argument("catalog",type=Path);p.add_argument("--output",required=True,type=Path)
-    approval=sub.add_parser("approve");approval.add_argument("plan",type=Path);approval.add_argument("--actor",required=True);approval.add_argument("--output",required=True,type=Path)
-    e=sub.add_parser("execute");e.add_argument("plan",type=Path);e.add_argument("--approval",required=True,type=Path);e.add_argument("--output",required=True,type=Path)
-    v=sub.add_parser("verify");v.add_argument("output",type=Path)
+    d=sub.add_parser("demo")
+    d.add_argument("--output",type=Path)
+    a=sub.add_parser("audit")
+    a.add_argument("catalog",type=Path)
+    p=sub.add_parser("plan")
+    p.add_argument("catalog",type=Path)
+    p.add_argument("--output",required=True,type=Path)
+    approval=sub.add_parser("approve")
+    approval.add_argument("plan",type=Path)
+    approval.add_argument("--actor",required=True)
+    approval.add_argument("--output",required=True,type=Path)
+    e=sub.add_parser("execute")
+    e.add_argument("plan",type=Path)
+    e.add_argument("--approval",required=True,type=Path)
+    e.add_argument("--output",required=True,type=Path)
+    v=sub.add_parser("verify")
+    v.add_argument("output",type=Path)
     args=parser.parse_args(argv)
     try:
         if args.command=="demo":
             root=args.output or Path("artifacts")/("delivery-"+datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ"))
             root.mkdir(parents=True,exist_ok=False)
-            catalog=load(FIXTURE);plan=build_plan(catalog)
-            manifest=source_manifest(FIXTURE.parent,[FIXTURE.name]);verify_manifest(FIXTURE.parent,manifest)
+            catalog=load(FIXTURE)
+            plan=build_plan(catalog)
+            manifest=source_manifest(FIXTURE.parent,[FIXTURE.name])
+            verify_manifest(FIXTURE.parent,manifest)
             immutable_json(root/"source-manifest.json",manifest)
             immutable_json(root/"plan.json",plan)
             blocked=False
-            try:execute(plan,{},root/"unapproved")
-            except DeliveryError:blocked=True
-            if not blocked:raise DeliveryError("Unapproved execution unexpectedly succeeded.")
+            try:
+                execute(plan,{},root/"unapproved")
+            except DeliveryError:
+                blocked=True
+            if not blocked:
+                raise DeliveryError("Unapproved execution unexpectedly succeeded.")
             print("[BLOCKED AS EXPECTED] No approval: zero sandbox writes.")
             approval=approve_plan(plan,"synthetic-demo-reviewer")
             operation=plan["changes"][0]["operation_id"]
@@ -52,18 +68,24 @@ def main(argv=None):
             print("[OK] Two transient failures retried, written-but-uncheckpointed change recovered, failed verification restored.")
             print("Artifacts: "+str(root))
         elif args.command=="audit":
-            report=audit_catalog(load(args.catalog));print(json.dumps(report,indent=2));return 0 if report["healthy"] else 1
+            report=audit_catalog(load(args.catalog))
+            print(json.dumps(report,indent=2))
+            return 0 if report["healthy"] else 1
         elif args.command=="plan":
-            immutable_json(args.output,build_plan(load(args.catalog)));print("[OK] Exact repair plan written; no execution.")
+            immutable_json(args.output,build_plan(load(args.catalog)))
+            print("[OK] Exact repair plan written; no execution.")
         elif args.command=="approve":
-            immutable_json(args.output,approve_plan(load(args.plan),args.actor));print("[OK] Local approval attestation written.")
+            immutable_json(args.output,approve_plan(load(args.plan),args.actor))
+            print("[OK] Local approval attestation written.")
         elif args.command=="execute":
             result=execute(load(args.plan),load(args.approval),args.output)
             print(json.dumps(result,indent=2))
             return 0 if result["status"]=="verified" else 1
-        else:print(json.dumps(verify_receipt(args.output),indent=2))
+        else:
+            print(json.dumps(verify_receipt(args.output),indent=2))
     except (DeliveryError,OSError,ValueError,KeyError) as exc:
-        print("[BLOCKED] "+str(exc));return 1
+        print("[BLOCKED] "+str(exc))
+        return 1
     return 0
 
 
