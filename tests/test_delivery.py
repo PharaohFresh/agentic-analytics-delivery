@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from delivery.catalog import DeliveryError, approve_plan, audit_catalog, build_plan, digest, physical_references
-from delivery.integrity import append_event, source_manifest, verify_journal, verify_manifest
+from delivery.integrity import append_event, journal_records, source_manifest, verify_journal, verify_manifest
 from delivery.workflow import atomic_json, execute, load, verify_receipt
 import delivery.workflow as workflow
 from delivery.__main__ import main
@@ -168,6 +168,10 @@ def edit_approver(value):
     value["approver"] = "someone-else"
 
 
+def edit_approval_plan_hash(value):
+    value["plan_sha256"] = "0" * 64
+
+
 def edit_plan(value):
     value["changes"][0]["after"] = value["changes"][0]["before"]
 
@@ -178,6 +182,7 @@ def edit_before_catalog(value):
 
 @pytest.mark.parametrize("name,edit", [
     ("approval.json", edit_approver),
+    ("approval.json", edit_approval_plan_hash),
     ("approved-plan.json", edit_plan),
     ("before-catalog.json", edit_before_catalog),
 ])
@@ -193,6 +198,27 @@ def test_verify_rejects_edited_retained_approval_evidence(tmp_path, name, edit):
     with pytest.raises(DeliveryError):
         verify_receipt(root)
     assert main(["verify", str(root)]) == 1
+
+
+@pytest.mark.parametrize("first_event,verifies", [("approval_checked", True), ("approval_skipped", False)])
+def test_verify_requires_the_approval_check_as_the_first_journal_record(tmp_path, first_event, verifies):
+    plan = build_plan(catalog())
+    root = tmp_path / "run"
+    execute(plan, approve_plan(plan, "original-reviewer"), root)
+    # Rebuild a valid chain and receipt tip so only the first record's event differs.
+    path = root / "journal.jsonl"
+    records = journal_records(path)
+    path.unlink()
+    for record in records:
+        append_event(path, first_event if record["sequence"] == 1 else record["event"], record["payload"])
+    receipt = load(root / "verified-receipt.json")
+    receipt["journal_tip"] = verify_journal(path)
+    atomic_json(root / "verified-receipt.json", receipt)
+    if verifies:
+        assert verify_receipt(root)["status"] == "verified"
+    else:
+        with pytest.raises(DeliveryError, match="Retained plan, approval"):
+            verify_receipt(root)
 
 
 def test_source_manifest_checks_content_not_only_size_and_rejects_path_escape(tmp_path):

@@ -34,7 +34,7 @@ Final verification independently reads the catalog, checks its approved expected
 
 A source manifest records bytes and SHA-256 for files within a resolved root. Paths escaping the root fail. A content change of unchanged size still fails verification.
 
-Journal records contain sequence, prior-record hash, event and payload. The final receipt retains the expected count and tip hash. Verification detects edited, reordered, deleted or appended records against that known tip. It also checks that the retained approved plan, approval and before catalog hash to the receipt's values and that the approval matches the first journal record. Hash chaining supplies integrity evidence, not authentication or an independently secured immutable store.
+Journal records contain sequence, prior-record hash, event and payload. The final receipt retains the expected count and tip hash. Verification detects edited, reordered, deleted or appended records against that known tip. It also checks that the retained approved plan and before catalog hash to the receipt's values, and that the approval's plan hash and approver match the receipt and the first journal record. Other approval fields are not checked. Hash chaining supplies integrity evidence, not authentication or an independently secured immutable store.
 
 ## Data audit scope
 
