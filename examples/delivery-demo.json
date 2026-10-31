@@ -1,6 +1,7 @@
 {
   "checkpoint_recovery": {
     "after_sha256": "c19453797a9a8a249f1d415b45df602093462a7002aee59685d585de143819ad",
+    "approval_sha256": "e6c9c8bef900b76832051eddb7d3b135b38c2daecdcdc74520bab9640b676cb5",
     "attempts_this_execution": {},
     "before_sha256": "4eea0790ef609b5a0d1325e8eb1aba735656f944f35bc0c498150aa29e2e9b14",
     "cloud_mutations": 0,
@@ -43,7 +44,7 @@
     "identity_authentication": "not implemented; local approval attestation",
     "journal_tip": {
       "event_count": 4,
-      "sha256": "ff6a48da388d23f3fc664cee0accc4e3cba58424bdbdc0c2707c277adaa72e0d"
+      "sha256": "5be30f0e06a95910e5eb17ec84874fc5da26072601f9cd4100276b13fbce206c"
     },
     "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
     "status": "verified",
@@ -53,7 +54,7 @@
     "completed_operations": 0,
     "journal_tip": {
       "event_count": 2,
-      "sha256": "4be2989b995d8b323991220904384e7e80d5555f14266fc0043b67bda024cdd4"
+      "sha256": "3f935fe26ebb7cdd3741d23a05c4c032c1de46370dfc03d30a067d38a10c4ec3"
     },
     "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
     "status": "interrupted"
@@ -63,7 +64,7 @@
     "failed_candidate_sha256": "022964f5b5b8e7d18f99c770a8d969de1ca83d1991d2e7a561344faf8470acd3",
     "journal_tip": {
       "event_count": 5,
-      "sha256": "7d8e1b9f44cf36c96f9cd17e0110468adc89b4ba2b6a1a80a97e38ea401e3c98"
+      "sha256": "308647524337cd37f4fb472ddf223ed683257a75887ca585788e2e1ae6a62bb2"
     },
     "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
     "restored_sha256": "4eea0790ef609b5a0d1325e8eb1aba735656f944f35bc0c498150aa29e2e9b14",
@@ -113,6 +114,7 @@
   },
   "retry_and_verify": {
     "after_sha256": "c19453797a9a8a249f1d415b45df602093462a7002aee59685d585de143819ad",
+    "approval_sha256": "e6c9c8bef900b76832051eddb7d3b135b38c2daecdcdc74520bab9640b676cb5",
     "attempts_this_execution": {
       "e0f7a90f646db3c0718b83b6c147e0fffb4725d430dbd09b94e3de287e18706c": 3
     },
@@ -157,7 +159,7 @@
     "identity_authentication": "not implemented; local approval attestation",
     "journal_tip": {
       "event_count": 8,
-      "sha256": "61597ce94f08591f3eab36b03e2617f7f587b84828d70b72d802c2c1e1dea9ce"
+      "sha256": "33b5f26e14e8f55bb64e65c4622681188b491f47592e4ad04a4259471992498c"
     },
     "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
     "status": "verified",

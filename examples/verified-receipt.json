@@ -1,5 +1,6 @@
 {
   "after_sha256": "c19453797a9a8a249f1d415b45df602093462a7002aee59685d585de143819ad",
+  "approval_sha256": "e6c9c8bef900b76832051eddb7d3b135b38c2daecdcdc74520bab9640b676cb5",
   "attempts_this_execution": {
     "e0f7a90f646db3c0718b83b6c147e0fffb4725d430dbd09b94e3de287e18706c": 3
   },
@@ -44,7 +45,7 @@
   "identity_authentication": "not implemented; local approval attestation",
   "journal_tip": {
     "event_count": 8,
-    "sha256": "61597ce94f08591f3eab36b03e2617f7f587b84828d70b72d802c2c1e1dea9ce"
+    "sha256": "33b5f26e14e8f55bb64e65c4622681188b491f47592e4ad04a4259471992498c"
   },
   "plan_sha256": "9614f6bbfb914e127a6faff19f35ad2a793e72be1704a52fc169dac54980d63c",
   "status": "verified",
