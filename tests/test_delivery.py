@@ -229,9 +229,14 @@ def edit_before_catalog(value):
     value["assets"][0]["logical_name"] += "-edited"
 
 
+def edit_authorization_type(value):
+    value["authorization_type"] = "authenticated production identity"
+
+
 @pytest.mark.parametrize("name,edit", [
     ("approval.json", edit_approver),
     ("approval.json", edit_approval_plan_hash),
+    ("approval.json", edit_authorization_type),
     ("approved-plan.json", edit_plan),
     ("before-catalog.json", edit_before_catalog),
 ])
@@ -268,6 +273,45 @@ def test_verify_requires_the_approval_check_as_the_first_journal_record(tmp_path
     else:
         with pytest.raises(DeliveryError, match="Retained plan, approval"):
             verify_receipt(root)
+
+
+@pytest.mark.parametrize("change,message", [
+    ("drop_receipt_hash", "receipt's approval hash"),
+    ("reseal_receipt_to_edited_approval", "Retained plan, approval"),
+])
+def test_verify_binds_the_whole_approval_in_the_receipt_and_first_journal_record(tmp_path, change, message):
+    plan = build_plan(catalog())
+    root = tmp_path / "run"
+    execute(plan, approve_plan(plan, "original-reviewer"), root)
+    receipt = load(root / "verified-receipt.json")
+    if change == "drop_receipt_hash":
+        # A receipt written before the approval hash existed raises DeliveryError, not KeyError.
+        del receipt["approval_sha256"]
+    else:
+        # Matching the receipt to an edited approval still disagrees with the first journal record.
+        approval = load(root / "approval.json")
+        edit_authorization_type(approval)
+        atomic_json(root / "approval.json", approval)
+        receipt["approval_sha256"] = digest(approval)
+    atomic_json(root / "verified-receipt.json", receipt)
+    with pytest.raises(DeliveryError, match=message):
+        verify_receipt(root)
+    assert main(["verify", str(root)]) == 1
+
+
+def test_resume_rejects_an_approval_that_differs_from_the_first_journal_record(tmp_path):
+    plan = build_plan(catalog())
+    root = tmp_path / "run"
+    approval = approve_plan(plan, "original-reviewer")
+    assert execute(plan, approval, root, interrupt_after_write=True)["status"] == "interrupted"
+    # Editing the retained copy too lets the edited approval past the saved-evidence check.
+    edit_authorization_type(approval)
+    atomic_json(root / "approval.json", approval)
+    journal_before = (root / "journal.jsonl").read_text()
+    with pytest.raises(DeliveryError, match="journal's approval record"):
+        execute(plan, approval, root)
+    assert (root / "journal.jsonl").read_text() == journal_before
+    assert not (root / "verified-receipt.json").exists()
 
 
 def test_source_manifest_checks_content_not_only_size_and_rejects_path_escape(tmp_path):

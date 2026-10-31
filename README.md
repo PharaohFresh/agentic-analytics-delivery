@@ -95,7 +95,7 @@ The SQL harness passes eleven checks on its clean fixture. The delivery demo fir
 
 - `artifacts/demo/plan.json`: exact proposed dependency repair and complete before catalog.
 - `successful/catalog.json`: corrected working definitions.
-- `successful/verified-receipt.json`: final catalog hash, independent audit and journal tip.
+- `successful/verified-receipt.json`: approval hash, final catalog hash, independent audit and journal tip.
 - `successful/journal.jsonl`: approval check, attempts, applied operation and readback events.
 - `resumed/`: recovery after a write occurred before its checkpoint.
 - `rollback/`: retained failed candidate, restored fixture and failure journal.
@@ -149,7 +149,7 @@ An agent or person can produce a proposal, but execution still needs the exact a
 
 The local workflow has a single writer. Atomic working-file replacement, write-ahead events and reconstructed checkpoint state support recovery in the tested crash window. Failed candidates and before-state evidence are retained; only the current synthetic working fixture is restored.
 
-Journal hashes detect edits, reordering, truncation or extra events **against the independently retained receipt tip**. `delivery verify` also confirms that the retained approved plan and before catalog still hash to the receipt's values, and that the approval's plan hash and approver match the receipt and the journal's first approval record. These checks do not authenticate an approver or prevent an attacker who can rewrite both journal and receipt from forging local history. A production service needs trusted identity, an external immutable approval/receipt store, concurrency control, provider-specific idempotency/readback and explicit promotion authority.
+Journal hashes detect edits, reordering, truncation or extra events **against the independently retained receipt tip**. `delivery verify` also confirms that the retained approved plan and before catalog still hash to the receipt's values, and that the approval's canonical-JSON SHA-256, plan hash and approver match the receipt and the journal's first approval record, so any change to its parsed content fails. These checks do not authenticate an approver or prevent an attacker who can rewrite both journal and receipt from forging local history. A production service needs trusted identity, an external immutable approval/receipt store, concurrency control, provider-specific idempotency/readback and explicit promotion authority.
 
 [Architecture and contracts](docs/architecture.md) explain supported operations and unresolved cases. [Governance](GOVERNANCE.md) distinguishes the implemented local demonstration from the enterprise promotion pattern. [The older deployment plan](plans/deployment_plan_example.md) is illustrative; the CLI produces current content-bound plans and approvals.
 

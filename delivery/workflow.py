@@ -51,6 +51,11 @@ def execute(plan, approval, root: Path, *, failures_before=None, interrupt_after
         raise DeliveryError("Checkpoint belongs to a different approved plan.")
     completed = set(checkpoint["completed"])
     verify_journal(journal_path)
+    # A resumed run must present the same approval its first journal record was written for.
+    approval_record = {"plan_sha256": plan_hash, "approver": approval["approver"], "approval_sha256": digest(approval)}
+    records = journal_records(journal_path)
+    if records and (records[0]["event"] != "approval_checked" or records[0]["payload"] != approval_record):
+        raise DeliveryError("The journal's approval record does not match this approval.")
     current = load(catalog_path)
     expected = catalog_after(plan, completed)
     if current != expected:
@@ -69,7 +74,7 @@ def execute(plan, approval, root: Path, *, failures_before=None, interrupt_after
         append_event(journal_path, "operation_recovered", {"plan_sha256": plan_hash, "operation_id": pending[0]["operation_id"]})
         atomic_json(checkpoint_path, {"plan_sha256": plan_hash, "completed": sorted(completed)})
     if not journal_records(journal_path):
-        append_event(journal_path, "approval_checked", {"plan_sha256": plan_hash, "approver": approval["approver"]})
+        append_event(journal_path, "approval_checked", approval_record)
     remaining_failures = dict(failures_before or {})
     attempts = {}
     for change in plan["changes"]:
@@ -117,7 +122,8 @@ def execute(plan, approval, root: Path, *, failures_before=None, interrupt_after
                 "journal_tip": verify_journal(journal_path)}
     append_event(journal_path, "independent_readback_passed", {"catalog_sha256": digest(final), "healthy": audit["healthy"]})
     receipt = {"status": "verified", "target": "local synthetic files only", "data_origin": "synthetic",
-               "plan_sha256": plan_hash, "before_sha256": plan["before_sha256"], "after_sha256": digest(final),
+               "plan_sha256": plan_hash, "approval_sha256": digest(approval),
+               "before_sha256": plan["before_sha256"], "after_sha256": digest(final),
                "completed_operations": len(completed), "attempts_this_execution": attempts,
                "final_audit": audit, "journal_tip": verify_journal(journal_path),
                "cloud_mutations": 0, "identity_authentication": "not implemented; local approval attestation"}
@@ -131,14 +137,18 @@ def verify_receipt(root: Path) -> dict:
     if digest(catalog) != receipt["after_sha256"] or not audit_catalog(catalog)["healthy"]:
         raise DeliveryError("Catalog differs from the independently retained verification receipt.")
     verify_journal(root / "journal.jsonl", receipt["journal_tip"])
-    # The retained plan, approval and starting catalog must still be the ones the receipt and
-    # the first journal record were sealed against.
+    # The retained plan, whole approval and starting catalog must still be the ones the receipt and
+    # the first journal record were sealed against. A receipt without an approval hash fails.
     approval = load(root / "approval.json")
+    approval_hash = digest(approval)
+    if receipt.get("approval_sha256") != approval_hash:
+        raise DeliveryError("Retained approval differs from the receipt's approval hash.")
     first = journal_records(root / "journal.jsonl")[0]
     if (digest(load(root / "approved-plan.json")) != receipt["plan_sha256"]
             or digest(load(root / "before-catalog.json")) != receipt["before_sha256"]
             or not isinstance(approval, dict) or approval.get("plan_sha256") != receipt["plan_sha256"]
             or first["event"] != "approval_checked"
-            or first["payload"] != {"plan_sha256": receipt["plan_sha256"], "approver": approval.get("approver")}):
+            or first["payload"] != {"plan_sha256": receipt["plan_sha256"], "approver": approval.get("approver"),
+                                    "approval_sha256": approval_hash}):
         raise DeliveryError("Retained plan, approval or starting catalog differs from the verification receipt.")
     return receipt
