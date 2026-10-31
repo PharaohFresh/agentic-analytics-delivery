@@ -26,7 +26,7 @@ The approver label is a local attestation. The program does not authenticate who
 
 Each change has a stable operation ID. Before an attempt, execution appends a write-ahead event. It writes the next expected catalog atomically, reads it back, records the applied operation and checkpoints it. Retryable failure injection exercises a bounded attempt loop.
 
-On resume, the current catalog must equal the approved before state plus checkpointed changes. For a crash between a write and checkpoint, recovery accepts exactly the next operation only if the last started, applied or recovered journal event identifies that approved plan/operation and the complete catalog matches its expected result. Started events must bind the expected before hash; applied events must bind the observed after hash. Repeated crashes before the execution or recovery checkpoint are covered by regression tests. Unrelated drift fails.
+On resume, the current catalog must equal the approved before state plus checkpointed changes. For a crash between a write and checkpoint, recovery accepts exactly the next operation only if the last started, applied or recovered journal event identifies that approved plan/operation and the complete catalog matches its expected result. Started events must bind the expected before hash; applied events must bind the observed after hash. The journal's first record must name the presented approval, including its SHA-256. Repeated crashes before the execution or recovery checkpoint are covered by regression tests. Unrelated drift fails.
 
 Final verification independently reads the catalog, checks its approved expected hash and re-runs the graph audit. Failure retains the candidate, restores the current working fixture, resets its checkpoint and logs restoration. This is local rollback only; a cloud API may require a different compensating action.
 
@@ -34,7 +34,7 @@ Final verification independently reads the catalog, checks its approved expected
 
 A source manifest records bytes and SHA-256 for files within a resolved root. Paths escaping the root fail. A content change of unchanged size still fails verification.
 
-Journal records contain sequence, prior-record hash, event and payload. The final receipt retains the expected count and tip hash. Verification detects edited, reordered, deleted or appended records against that known tip. It also checks that the retained approved plan and before catalog hash to the receipt's values, and that the whole approval file matches the receipt and the first journal record: both record its SHA-256, so editing any approval field fails verification. Hash chaining supplies integrity evidence, not authentication or an independently secured immutable store.
+Journal records contain sequence, prior-record hash, event and payload. The final receipt retains the expected count and tip hash. Verification detects edited, reordered, deleted or appended records against that known tip. It also checks that the retained approved plan and before catalog hash to the receipt's values, and that the approval matches the receipt and the first journal record. Both record the SHA-256 of the approval's canonical JSON, so any change to its parsed content fails verification. The hash is not of the file's raw bytes. Hash chaining supplies integrity evidence, not authentication or an independently secured immutable store.
 
 ## Data audit scope
 
