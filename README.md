@@ -1,6 +1,6 @@
 # Governed Agentic Analytics Delivery
 
-A working reference for delivering analytics changes with an explicit approval boundary and independently checkable evidence. The runnable examples trace SQL/report dependencies, find a cross-environment reference, execute an exact approved repair in a local sandbox and verify recovery and final state.
+A reference workflow for making an analytics change only after its impact and exact repair plan are reviewed. It traces dependencies, blocks unapproved execution, retries bounded failures and verifies the recovered result. The runnable implementation is deterministic Python and SQL on synthetic fixtures; agent roles are architectural guidance.
 
 **Author:** [Amir Ebrahim](https://www.linkedin.com/in/amirebrahim/) | Senior Analytics Engineer
 
@@ -12,9 +12,43 @@ All platform definitions and datasets are synthetic. `prod` and `dev` in the cat
 
 | Reader | Useful starting point |
 |---|---|
-| Recruiter or hiring manager | [Generated delivery proof](examples/delivery-demo.json) and the capability table below |
+| Recruiter or hiring manager | The [before/after dependency view and failure timeline](#what-the-demo-shows) below; the [generated delivery proof](examples/delivery-demo.json) is their raw evidence |
 | Analytics engineer | [Eleven SQL checks](scripts/checks.yml), [failure cases](tests/test_negative_path.py), and [SQL lineage](delivery/catalog.py) |
 | Data/platform engineer | [Approval and checkpoint implementation](delivery/workflow.py), [integrity checks](delivery/integrity.py), and [delivery tests](tests/test_delivery.py) |
+
+## What the demo shows
+
+The fixture's production-labeled ingestion pipeline reads a development-labeled source, so the revenue report depends on development data. The approved plan changes that one dependency to its production counterpart. The final audit is healthy and reports no affected report.
+
+```mermaid
+flowchart LR
+    subgraph Before["Before: audit fails"]
+        direction LR
+        A1[dev.raw_orders] -. environment leak .-> B1[prod.order_ingestion]
+        B1 --> C1[prod.order_fact] --> D1[prod.daily_revenue] --> E1[prod.revenue_report]
+        F1[prod.item_catalog] --> G1[prod.product_labels] --> E1
+    end
+    subgraph After["After: repair verified"]
+        direction LR
+        A2[prod.raw_orders] --> B2[prod.order_ingestion]
+        B2 --> C2[prod.order_fact] --> D2[prod.daily_revenue] --> E2[prod.revenue_report]
+        F2[prod.item_catalog] --> G2[prod.product_labels] --> E2
+    end
+```
+
+Each panel leaves out the source not in use: `prod.raw_orders` before the repair and `dev.raw_orders` after it. `prod.product_labels` contains the comment `-- FROM dev.not_a_real_dependency`. The SQL parser ignores it, so the comment never appears as a dependency.
+
+The demo then runs that plan through each failure it is built to handle:
+
+| Step | Injected condition | Result |
+|---|---|---|
+| 1. Execute without approval | No approval | Blocked before any sandbox write |
+| 2. Approved repair | Two transient failures | Applied on the third attempt; independent readback passed; `verified` |
+| 3. Crash window | Stop after the write, before its checkpoint | `interrupted` with no checkpointed operation |
+| 4. Resume | None | Recognized the earlier write from its write-ahead record and expected state; made no new attempt; `verified` |
+| 5. Failed verification | An unapproved extra change after the write | Readback failed; the candidate was retained and the working fixture restored to its starting hash; `rolled_back` |
+
+No step touches a cloud system; the two verified runs record `cloud_mutations: 0`.
 
 ## What works here
 
