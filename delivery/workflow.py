@@ -131,4 +131,14 @@ def verify_receipt(root: Path) -> dict:
     if digest(catalog) != receipt["after_sha256"] or not audit_catalog(catalog)["healthy"]:
         raise DeliveryError("Catalog differs from the independently retained verification receipt.")
     verify_journal(root / "journal.jsonl", receipt["journal_tip"])
+    # The retained plan, approval and starting catalog must still be the ones the receipt and
+    # the first journal record were sealed against.
+    approval = load(root / "approval.json")
+    first = journal_records(root / "journal.jsonl")[0]
+    if (digest(load(root / "approved-plan.json")) != receipt["plan_sha256"]
+            or digest(load(root / "before-catalog.json")) != receipt["before_sha256"]
+            or not isinstance(approval, dict) or approval.get("plan_sha256") != receipt["plan_sha256"]
+            or first["event"] != "approval_checked"
+            or first["payload"] != {"plan_sha256": receipt["plan_sha256"], "approver": approval.get("approver")}):
+        raise DeliveryError("Retained plan, approval or starting catalog differs from the verification receipt.")
     return receipt

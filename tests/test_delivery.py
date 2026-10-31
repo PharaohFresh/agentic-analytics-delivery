@@ -8,6 +8,7 @@ from delivery.catalog import DeliveryError, approve_plan, audit_catalog, build_p
 from delivery.integrity import append_event, source_manifest, verify_journal, verify_manifest
 from delivery.workflow import atomic_json, execute, load, verify_receipt
 import delivery.workflow as workflow
+from delivery.__main__ import main
 
 
 FIXTURE=Path(__file__).resolve().parents[1]/"delivery/fixtures/catalog.json"
@@ -161,6 +162,37 @@ def test_journal_tampering_is_detected_against_retained_receipt(tmp_path,change)
     else:append_event(path,"unapproved-extra-event",{});lines=path.read_text().splitlines()
     path.write_text("\n".join(lines)+"\n")
     with pytest.raises(DeliveryError):verify_receipt(root)
+
+
+def edit_approver(value):
+    value["approver"] = "someone-else"
+
+
+def edit_plan(value):
+    value["changes"][0]["after"] = value["changes"][0]["before"]
+
+
+def edit_before_catalog(value):
+    value["assets"][0]["logical_name"] += "-edited"
+
+
+@pytest.mark.parametrize("name,edit", [
+    ("approval.json", edit_approver),
+    ("approved-plan.json", edit_plan),
+    ("before-catalog.json", edit_before_catalog),
+])
+def test_verify_rejects_edited_retained_approval_evidence(tmp_path, name, edit):
+    plan = build_plan(catalog())
+    root = tmp_path / "run"
+    execute(plan, approve_plan(plan, "original-reviewer"), root)
+    assert verify_receipt(root)["status"] == "verified"
+    assert main(["verify", str(root)]) == 0
+    value = load(root / name)
+    edit(value)
+    atomic_json(root / name, value)
+    with pytest.raises(DeliveryError):
+        verify_receipt(root)
+    assert main(["verify", str(root)]) == 1
 
 
 def test_source_manifest_checks_content_not_only_size_and_rejects_path_escape(tmp_path):

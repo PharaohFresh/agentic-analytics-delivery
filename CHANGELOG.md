@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-31
+
+- `delivery verify` now also checks the retained `approved-plan.json`, `approval.json` and `before-catalog.json` against the receipt's plan and before hashes and the journal's first approval record. Before this, editing the approver after a successful run still verified. Three new tests edit each file and expect a failed verify; the 41 existing tests pass, and the committed demo report, journal and receipt regenerate byte-identically.
+
 ## 2026-10-06
 
 - Added a runnable synthetic SQL-lineage/environment delivery with exact-plan approval, bounded retries, write-ahead/checkpoint recovery, independent readback, retained failed candidates and hash-chained receipts.

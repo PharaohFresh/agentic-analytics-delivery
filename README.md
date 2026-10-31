@@ -115,7 +115,7 @@ An agent or person can produce a proposal, but execution still needs the exact a
 
 The local workflow has a single writer. Atomic working-file replacement, write-ahead events and reconstructed checkpoint state support recovery in the tested crash window. Failed candidates and before-state evidence are retained; only the current synthetic working fixture is restored.
 
-Journal hashes detect edits, reordering, truncation or extra events **against the independently retained receipt tip**. They do not authenticate an approver or prevent an attacker who can rewrite both journal and receipt from forging local history. A production service needs trusted identity, an external immutable approval/receipt store, concurrency control, provider-specific idempotency/readback and explicit promotion authority.
+Journal hashes detect edits, reordering, truncation or extra events **against the independently retained receipt tip**. `delivery verify` also confirms that the retained approved plan, approval and before catalog still match the receipt and the journal's first approval record. These checks do not authenticate an approver or prevent an attacker who can rewrite both journal and receipt from forging local history. A production service needs trusted identity, an external immutable approval/receipt store, concurrency control, provider-specific idempotency/readback and explicit promotion authority.
 
 [Architecture and contracts](docs/architecture.md) explain supported operations and unresolved cases. [Governance](GOVERNANCE.md) distinguishes the implemented local demonstration from the enterprise promotion pattern. [The older deployment plan](plans/deployment_plan_example.md) is illustrative; the CLI produces current content-bound plans and approvals.
 
