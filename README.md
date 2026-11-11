@@ -1,18 +1,18 @@
 # Governed Agentic Analytics Delivery
 
-A reference workflow for making an analytics change only after its impact and exact repair plan are reviewed. It traces dependencies, blocks unapproved execution, retries bounded failures and verifies the recovered result. The runnable implementation is deterministic Python and SQL on synthetic fixtures; agent roles are architectural guidance.
+A reference workflow for making an analytics change only after its impact and exact repair plan are reviewed. It traces dependencies, blocks unapproved execution, retries bounded failures and verifies the recovered result. The implementation is deterministic Python and SQL on synthetic fixtures; agent roles are architectural guidance.
 
 **Author:** [Amir Ebrahim](https://www.linkedin.com/in/amirebrahim/) | Senior Analytics Engineer
 
-The difficult part of agent-assisted delivery is establishing what changed, why it was allowed and whether it worked. Role descriptions alone cannot prove that. This repository pairs the operating model with executable negative-path tests, content-bound plans, checkpoint recovery and a retained verification receipt.
+The difficult part of agent-assisted delivery is establishing what changed, why it was allowed and whether it worked. This repository pairs the operating model with executable negative-path tests, content-bound plans, checkpoint recovery and a retained verification receipt.
 
-All platform definitions and datasets are synthetic. `prod` and `dev` in the catalog are labels on invented metadata; execution changes local sandbox files. No employer code, infrastructure IDs, credentials, live systems or private records are included.
+All platform definitions and datasets are synthetic, and execution changes local sandbox files. No employer code, credentials or private records are included.
 
 ## Start here
 
 | Reader | Useful starting point |
 |---|---|
-| Recruiter or hiring manager | The [before/after dependency view and failure timeline](#what-the-demo-shows) below; the [generated delivery proof](examples/delivery-demo.json) is their raw evidence |
+| Recruiter or hiring manager | The [before/after dependency view and failure timeline](#what-the-demo-shows) below; the [generated delivery proof](examples/delivery-demo.json) is the raw evidence |
 | Analytics engineer | [Eleven SQL checks](scripts/checks.yml), [failure cases](tests/test_negative_path.py), and [SQL lineage](delivery/catalog.py) |
 | Data/platform engineer | [Approval and checkpoint implementation](delivery/workflow.py), [integrity checks](delivery/integrity.py), and [delivery tests](tests/test_delivery.py) |
 
@@ -36,7 +36,7 @@ flowchart LR
     end
 ```
 
-Each panel leaves out the source not in use: `prod.raw_orders` before the repair and `dev.raw_orders` after it. `prod.product_labels` contains the comment `-- FROM dev.not_a_real_dependency`. The SQL parser ignores it, so the comment never appears as a dependency.
+Each panel leaves out the source not in use: `prod.raw_orders` before the repair and `dev.raw_orders` after it. `prod.product_labels` contains the comment `-- FROM dev.not_a_real_dependency`; the SQL parser ignores it.
 
 The demo then runs that plan through each failure it is built to handle:
 
@@ -48,7 +48,7 @@ The demo then runs that plan through each failure it is built to handle:
 | 4. Resume | None | Recognized the earlier write from its write-ahead record and expected state; made no new attempt; `verified` |
 | 5. Failed verification | An unapproved extra change after the write | Readback failed; the candidate was retained and the working fixture restored to its starting hash; `rolled_back` |
 
-No step touches a cloud system; the two verified runs record `cloud_mutations: 0`.
+The two verified runs record `cloud_mutations: 0`.
 
 ## What works here
 
@@ -78,7 +78,7 @@ flowchart LR
 
 ## Run it
 
-Python 3.12 or newer is sufficient. No cloud account or model API key is needed.
+Python 3.12 or newer. No cloud account or model API key is needed.
 
 ```text
 python -m pip install -r requirements-dev.txt
@@ -87,7 +87,7 @@ python -m delivery demo --output artifacts/demo
 python -m pytest -q
 ```
 
-Run from the repository root in PowerShell, Bash or a terminal on macOS/Linux. Use a virtual environment. The demonstration output directory must be new so prior evidence is retained.
+Use a virtual environment. The demonstration output directory must be new so prior evidence is retained.
 
 The SQL harness passes eleven checks on its clean fixture. The delivery demo first proves that missing approval causes zero sandbox writes. It then shows one environment leak and one affected report, a successful retry, a crash-window recovery and a failed verification that restores the working fixture.
 
@@ -101,7 +101,7 @@ The SQL harness passes eleven checks on its clean fixture. The delivery demo fir
 - `rollback/`: retained failed candidate, restored fixture and failure journal.
 - `source-manifest.json`: exact source-file bytes rather than a file-size-only check.
 
-[The committed example report](examples/delivery-demo.json) was produced by these commands. It identifies simulated approvals and synthetic inputs explicitly.
+[The committed example report](examples/delivery-demo.json) was produced by these commands.
 
 ## Plan, review and execute separately
 
@@ -113,13 +113,11 @@ python -m delivery execute artifacts/review/plan.json --approval artifacts/revie
 python -m delivery verify artifacts/manual-sandbox
 ```
 
-The first audit exits `1` because the fixture intentionally contains an environment leak. Read the proposed change before approving it. The approval file is an explicit local attestation, not an authenticated production authorization service. The fully scripted demo labels its approver `synthetic-demo-reviewer`.
-
-Exit code `0` means the requested operation completed. Code `1` means an unhealthy audit, blocked/partial execution or failed verification. Argument errors use code `2`.
+The first audit exits `1` because the fixture intentionally contains an environment leak. Read the proposed change before approving it. The approval file is a local attestation; the scripted demo labels its approver `synthetic-demo-reviewer`.
 
 ## The data-quality harness
 
-The original four-check harness caught row loss, orphan items and null prices. It could miss same-count duplicates, changed prices and an incorrect parent that happened to exist. It now checks:
+The original four-check harness caught row loss, orphan items and null prices, but could miss same-count duplicates, changed prices and an incorrect parent that happened to exist. It now checks:
 
 1. Source/fact row counts at each grain.
 2. Item and order key uniqueness, nulls and bidirectional coverage.
@@ -127,31 +125,29 @@ The original four-check harness caught row loss, orphan items and null prices. I
 4. Null prices.
 5. Item prices and parent IDs against source records by stable key.
 
-The failure suite includes offsetting price errors whose aggregate total remains correct. This is why value-level reconciliation is separate from row-count and total-value checks. [Twelve harness tests](tests/test_negative_path.py) run clean and corrupted fixtures.
+The failure suite includes offsetting price errors whose aggregate total remains correct, which is why value-level reconciliation goes beyond row counts and totals. [Twelve harness tests](tests/test_negative_path.py) run clean and corrupted fixtures.
 
-The SQL currently targets SQLite; a warehouse adapter must translate dialect-specific null-safe comparisons and bind the actual source/target tables. `connect()` remains an explicit extension point, not a claimed implemented cloud connector.
+The SQL targets SQLite; `connect()` is the extension point for a warehouse adapter.
 
 ## Lineage and impact analysis
 
 [The catalog](delivery/fixtures/catalog.json) describes sources, a pipeline, a fact table, views and a report. View dependencies are parsed with SQLGlot scope analysis, so a CTE name, table alias, comment or string literal is not mistaken for an external source. Declared platform dependencies complete the graph between layers.
 
-Missing assets, unparsed SQL and cycles remain explicit issues and block automatic repair planning. Environment repair uses a unique logical counterpart with the same kind in the target environment. Ambiguity fails. SQL reference changes require their own reviewed SQL proposal; the code does not replace substrings heuristically.
-
-Operational source categories come from declared fixture metadata. The output does not claim to discover an unknown organization's real source systems or prove live permissions, refresh completion or rendered dashboard correctness.
+Missing assets, unparsed SQL and cycles remain explicit issues and block automatic repair planning. Environment repair uses a unique logical counterpart with the same kind in the target environment; ambiguity fails. SQL reference changes require their own reviewed SQL proposal.
 
 ## Agents and the executable boundary
 
-The [role definitions](agents/) and [runbooks](skills/) describe how an investigator, orchestrator, execution role and verifier divide responsibility. They can be used by different capable agent runtimes. The executable implementation here is deterministic Python and SQL; it does not invoke LLMs, spawn autonomous agents or contact MCP/cloud servers.
+The [role definitions](agents/) and [runbooks](skills/) describe how an investigator, orchestrator, execution role and verifier divide responsibility, independent of any particular agent runtime. The executable code is deterministic Python and SQL; it does not invoke LLMs or contact MCP/cloud servers.
 
-An agent or person can produce a proposal, but execution still needs the exact approved artifact and verification can fail it. Models are selected for the task; [routing guidance](docs/model-routing.md) does not prescribe a fixed inexpensive worker tier or claim unmeasured cost savings.
+An agent or person can produce a proposal, but execution still needs the exact approved artifact and verification can fail it. See the [routing guidance](docs/model-routing.md).
 
-## Integrity and recovery limits
+## Integrity and recovery
 
-The local workflow has a single writer. Atomic working-file replacement, write-ahead events and reconstructed checkpoint state support recovery in the tested crash window. Failed candidates and before-state evidence are retained; only the current synthetic working fixture is restored.
+The local workflow has a single writer. Atomic working-file replacement, write-ahead events and reconstructed checkpoint state support recovery in the tested crash window. Failed candidates and before-state evidence are retained.
 
-Journal hashes detect edits, reordering, truncation or extra events **against the independently retained receipt tip**. `delivery verify` also confirms that the retained approved plan and before catalog still hash to the receipt's values, and that the approval's canonical-JSON SHA-256, plan hash and approver match the receipt and the journal's first approval record, so any change to its parsed content fails. These checks do not authenticate an approver or prevent an attacker who can rewrite both journal and receipt from forging local history. A production service needs trusted identity, an external immutable approval/receipt store, concurrency control, provider-specific idempotency/readback and explicit promotion authority.
+Journal hashes detect edits, reordering, truncation or extra events against the independently retained receipt tip. `delivery verify` also confirms that the retained approved plan, before catalog and approval still hash to the receipt's values.
 
-[Architecture and contracts](docs/architecture.md) explain supported operations and unresolved cases. [Governance](GOVERNANCE.md) distinguishes the implemented local demonstration from the enterprise promotion pattern. [The older deployment plan](plans/deployment_plan_example.md) is illustrative; the CLI produces current content-bound plans and approvals.
+[Architecture and contracts](docs/architecture.md) cover supported operations and the production adaptation. [Governance](GOVERNANCE.md) distinguishes the local demonstration from the enterprise promotion pattern.
 
 ## Repository map
 
@@ -164,7 +160,7 @@ examples/        command-generated demonstration evidence
 agents/          conceptual role interfaces for agent-assisted work
 skills/          sanitized runbooks
 plans/           implementation and illustrative approval artifacts
-models/          illustrative dbt-style models, not a separate warehouse
+models/          illustrative dbt-style models
 docs/            architecture and model-routing choices
 ```
 
